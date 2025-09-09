@@ -88,6 +88,16 @@ class WattBoxHTTPClient:
         """Enable or disable auto reboot for all outlets"""
         cmd = 4 if enabled else 5
         await self._fire_and_forget(f"control.cgi?outlet=0&command={cmd}")
+        
+    async def get_outlet_names(self) -> list[str]:
+        """Return list of outlet names from <outlet_name>."""
+        xml_text = await self._get_text("wattbox_info.xml")
+        root = ET.fromstring(xml_text)
+        node = root.find("outlet_name")
+        if node is None or node.text is None:
+            return []
+        csv = node.text.replace("\r", "").replace("\n", "").strip()
+        return [p.strip() for p in csv.split(",") if p.strip() != ""]
 
     async def get_metrics(self) -> Dict[str, Optional[float]]:
         """Return voltage V, current A, power W if present"""

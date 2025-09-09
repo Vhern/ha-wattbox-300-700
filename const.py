@@ -1,5 +1,5 @@
 DOMAIN = "wattbox_300_700"
-PLATFORMS = ["switch"]
+PLATFORMS = ["switch", "sensor"]
 
 CONF_HOST = "host"
 CONF_USERNAME = "username"
