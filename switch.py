@@ -65,8 +65,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
     entities: list[WBOutletSwitch] = []
     for i in range(outlets):
         n = i + 1
-        label = names[i] if i < len(names) and names[i] else f"WattBox Outlet {n}"
+        if i < len(names) and names[i]:
+            label = f"{n} - {names[i]}"
+        else:
+            label = f"Outlet {n}"
         entities.append(WBOutletSwitch(client, coordinator, n, entry, label))
+
 
     add_entities(entities, True)
 
