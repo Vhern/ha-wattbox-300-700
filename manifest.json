@@ -1,0 +1,10 @@
+{
+  "domain": "wattbox_300_700",
+  "name": "WattBox 300/700 HTTP",
+  "version": "0.1.0",
+  "documentation": "",
+  "requirements": [],
+  "codeowners": ["@vhern"],
+  "iot_class": "local_polling",
+  "config_flow": true
+}
