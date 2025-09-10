@@ -1,7 +1,7 @@
 {
   "domain": "wattbox_300_700",
   "name": "WattBox 300/700 HTTP",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://github.com/Vhern/ha-wattbox-300-700",
   "requirements": [],
   "codeowners": ["@vhern"],
