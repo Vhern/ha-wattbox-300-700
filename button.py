@@ -7,22 +7,26 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, CONF_OUTLETS, DEFAULT_OUTLETS
+from .const import (
+    DOMAIN,
+    CONF_MODEL,
+    CONF_OUTLETS,
+    DEFAULT_MODEL,
+    outlets_for,
+)
 from .api import WattBoxHTTPClient
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entities: AddEntitiesCallback) -> None:
-    # Get client
     client: WattBoxHTTPClient = hass.data[DOMAIN][entry.entry_id]["client"]
 
-    # How many outlets to expose buttons for
-    outlets = entry.options.get(CONF_OUTLETS, entry.data.get(CONF_OUTLETS, DEFAULT_OUTLETS))
+    model = entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+    outlets = entry.data.get(CONF_OUTLETS) or outlets_for(model)
     if not outlets or outlets < 1:
-        outlets = DEFAULT_OUTLETS
+        outlets = outlets_for(model or DEFAULT_MODEL)
 
-    # Try to load names once for prettier labels
     names: list[str] = []
     try:
         names = await client.get_outlet_names()
@@ -58,7 +62,7 @@ class WBBase(ButtonEntity):
             "identifiers": {(DOMAIN, entry.data.get("host"))},
             "name": f"WattBox 300/700 ({entry.data.get('host')})",
             "manufacturer": "Snap One",
-            "model": "WattBox 300/700",
+            "model": entry.data.get(CONF_MODEL, DEFAULT_MODEL),
         }
 
 

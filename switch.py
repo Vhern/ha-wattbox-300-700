@@ -12,10 +12,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
+    CONF_MODEL,
     CONF_OUTLETS,
     CONF_SCAN_INTERVAL,
-    DEFAULT_OUTLETS,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_MODEL,
+    outlets_for,
 )
 from .api import WattBoxHTTPClient
 
@@ -25,11 +27,12 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entities: AddEntitiesCallback) -> None:
     client: WattBoxHTTPClient = hass.data[DOMAIN][entry.entry_id]["client"]
 
-    outlets = entry.options.get(CONF_OUTLETS, entry.data.get(CONF_OUTLETS, DEFAULT_OUTLETS))
+    model = entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+    outlets = entry.data.get(CONF_OUTLETS) or outlets_for(model)
     if not outlets or outlets < 1:
-        outlets = DEFAULT_OUTLETS
+        outlets = outlets_for(model or DEFAULT_MODEL)
 
-    scan_interval = entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+    scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
     # fetch names once
     names: list[str] = []
@@ -68,15 +71,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
         if i < len(names) and names[i]:
             label = f"{n} - {names[i]}"
         else:
-            label = f"Outlet {n}"
+            label = f"WattBox Outlet {n}"
         entities.append(WBOutletSwitch(client, coordinator, n, entry, label))
-
 
     add_entities(entities, True)
 
 
 class WBOutletSwitch(SwitchEntity):
-    """One WattBox outlet"""
+    """One WattBox outlet switch"""
 
     def __init__(self, client: WattBoxHTTPClient, coordinator: DataUpdateCoordinator, outlet: int, entry: ConfigEntry, label: str):
         self._client = client
@@ -89,7 +91,7 @@ class WBOutletSwitch(SwitchEntity):
             "identifiers": {(DOMAIN, entry.data.get("host"))},
             "name": f"WattBox 300/700 ({entry.data.get('host')})",
             "manufacturer": "Snap One",
-            "model": "WattBox 300/700",
+            "model": entry.data.get(CONF_MODEL, DEFAULT_MODEL),
         }
 
     @property
