@@ -79,9 +79,9 @@ class WattBoxHTTPClient:
         await self._fire_and_forget(f"control.cgi?outlet={outlet}&command={cmd}")
 
     async def reset_outlet(self, outlet: int) -> None:
-        """Power reset one outlet (command 3)"""
-        if outlet <= 0:
-            raise ValueError("outlet must be 1..N for reset")
+        # 0 means reset all
+        if outlet < 0:
+            raise ValueError("outlet must be >= 0")
         await self._fire_and_forget(f"control.cgi?outlet={outlet}&command=3")
 
     async def set_auto_reboot(self, enabled: bool) -> None:
