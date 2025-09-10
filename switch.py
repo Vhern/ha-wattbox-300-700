@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import Any, List
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+    CoordinatorEntity,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -34,8 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
 
     scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
 
-    # fetch names once
-    names: list[str] = []
+    names: List[str] = []
     try:
         names = await client.get_outlet_names()
     except Exception as e:
@@ -49,7 +52,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
             return states[:outlets]
         except Exception as e:
             _LOGGER.warning("WattBox poll failed: %s", e)
-            raise UpdateFailed(str(e)) from e
+            raise UpdateFailed(str(e))
 
     coordinator = DataUpdateCoordinator(
         hass,
@@ -65,6 +68,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
         _LOGGER.warning("Initial refresh failed, creating entities anyway: %s", e)
         coordinator.async_set_updated_data([False] * outlets)
 
+    hass.data.setdefault(DOMAIN, {}).setdefault(entry.entry_id, {})["switch_coordinator"] = coordinator
+
     entities: list[WBOutletSwitch] = []
     for i in range(outlets):
         n = i + 1
@@ -77,12 +82,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, add_entitie
     add_entities(entities, True)
 
 
-class WBOutletSwitch(SwitchEntity):
+class WBOutletSwitch(CoordinatorEntity, SwitchEntity):
     """One WattBox outlet switch"""
 
     def __init__(self, client: WattBoxHTTPClient, coordinator: DataUpdateCoordinator, outlet: int, entry: ConfigEntry, label: str):
+        super().__init__(coordinator)
         self._client = client
-        self.coordinator = coordinator
         self._outlet = outlet
         self._entry = entry
         self._attr_name = label
@@ -112,7 +117,4 @@ class WBOutletSwitch(SwitchEntity):
             await self._client.set_outlet(self._outlet, False)
         except Exception as e:
             _LOGGER.warning("Turn off outlet %s failed: %s", self._outlet, e)
-        await self.coordinator.async_request_refresh()
-
-    async def async_update(self) -> None:
         await self.coordinator.async_request_refresh()
